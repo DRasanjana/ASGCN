@@ -12,6 +12,7 @@ from sklearn import metrics
 from data_utils import ABSADatesetReader
 from models import LSTM, ASCNN, ASGCN
 
+
 class Instructor:
     def __init__(self, opt):
         self.opt = opt
@@ -88,16 +89,18 @@ class Instructor:
                         max_test_f1 = test_f1
                         if self.opt.save and test_f1 > self.global_f1:
                             self.global_f1 = test_f1
-                            torch.save(self.model.state_dict(), 'state_dict/'+self.opt.model_name+'_'+self.opt.dataset+'.pkl')
+                            torch.save(self.model.state_dict(),
+                                       'state_dict/' + self.opt.model_name + '_' + self.opt.dataset + '.pkl')
                             print('>>> best model saved.')
-                    print('loss: {:.4f}, acc: {:.4f}, test_acc: {:.4f}, test_f1: {:.4f}'.format(loss.item(), train_acc, test_acc, test_f1))
+                    print('loss: {:.4f}, acc: {:.4f}, test_acc: {:.4f}, test_f1: {:.4f}'.format(loss.item(), train_acc,
+                                                                                                test_acc, test_f1))
             if increase_flag == False:
                 continue_not_increase += 1
                 if continue_not_increase >= 5:
                     print('early stop.')
                     break
             else:
-                continue_not_increase = 0    
+                continue_not_increase = 0
         return max_test_acc, max_test_f1
 
     def _evaluate_acc_f1(self):
@@ -122,23 +125,24 @@ class Instructor:
                     t_outputs_all = torch.cat((t_outputs_all, t_outputs), dim=0)
 
         test_acc = n_test_correct / n_test_total
-        f1 = metrics.f1_score(t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu(), labels=[0, 1, 2], average='macro')
+        f1 = metrics.f1_score(t_targets_all.cpu(), torch.argmax(t_outputs_all, -1).cpu(), labels=[0, 1, 2],
+                              average='macro')
         return test_acc, f1
 
     def run(self, repeats=3):
         # Loss and Optimizer
         criterion = nn.CrossEntropyLoss()
-        
+
         if not os.path.exists('log/'):
             os.mkdir('log/')
 
-        f_out = open('log/'+self.opt.model_name+'_'+self.opt.dataset+'_val.txt', 'w', encoding='utf-8')
+        f_out = open('log/' + self.opt.model_name + '_' + self.opt.dataset + '_val.txt', 'w', encoding='utf-8')
 
         max_test_acc_avg = 0
         max_test_f1_avg = 0
         for i in range(repeats):
-            print('repeat: ', (i+1))
-            f_out.write('repeat: '+str(i+1))
+            print('repeat: ', (i + 1))
+            f_out.write('repeat: ' + str(i + 1))
             self._reset_params()
             _params = filter(lambda p: p.requires_grad, self.model.parameters())
             optimizer = self.opt.optimizer(_params, lr=self.opt.learning_rate, weight_decay=self.opt.l2reg)
@@ -157,8 +161,8 @@ class Instructor:
 if __name__ == '__main__':
     # Hyper Parameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', default='lstm', type=str)
-    parser.add_argument('--dataset', default='twitter', type=str, help='twitter, rest14, lap14, rest15, rest16')
+    parser.add_argument('--model_name', default='asgcn', type=str)
+    parser.add_argument('--dataset', default='law', type=str, help='twitter, rest14, lap14, rest15, rest16')
     parser.add_argument('--optimizer', default='adam', type=str)
     parser.add_argument('--initializer', default='xavier_uniform_', type=str)
     parser.add_argument('--learning_rate', default=0.001, type=float)
@@ -188,7 +192,7 @@ if __name__ == '__main__':
     }
     initializers = {
         'xavier_uniform_': torch.nn.init.xavier_uniform_,
-        'xavier_normal_': torch.nn.init.xavier_normal_,
+        'xavier_normal_': torch.nn.init.xavier_normal,
         'orthogonal_': torch.nn.init.orthogonal_,
     }
     optimizers = {
@@ -217,3 +221,4 @@ if __name__ == '__main__':
 
     ins = Instructor(opt)
     ins.run()
+

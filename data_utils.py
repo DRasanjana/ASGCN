@@ -4,14 +4,16 @@ import os
 import pickle
 import numpy as np
 
-def load_word_vec(path, word2idx=None, embed_dim=300):
+def load_word_vec(path, word2idx=None):
     fin = open(path, 'r', encoding='utf-8', newline='\n', errors='ignore')
     word_vec = {}
     for line in fin:
         tokens = line.rstrip().split()
-        word, vec = ' '.join(tokens[:-embed_dim]), tokens[-embed_dim:]
-        if word in word2idx.keys():
-            word_vec[word] = np.asarray(vec, dtype='float32')
+        if word2idx is None or tokens[0] in word2idx.keys():
+            try:
+                word_vec[tokens[0]] = np.asarray(tokens[1:], dtype='float32')
+            except:
+                print('WARNING: corrupted word vector of {} when being loaded from GloVe.'.format(tokens[0]))
     return word_vec
 
 
@@ -25,7 +27,7 @@ def build_embedding_matrix(word2idx, embed_dim, type):
         embedding_matrix = np.zeros((len(word2idx), embed_dim))  # idx 0 and 1 are all-zeros
         embedding_matrix[1, :] = np.random.uniform(-1/np.sqrt(embed_dim), 1/np.sqrt(embed_dim), (1, embed_dim))
         fname = './glove/glove.840B.300d.txt'
-        word_vec = load_word_vec(fname, word2idx=word2idx, embed_dim=embed_dim)
+        word_vec = load_word_vec(fname, word2idx=word2idx)
         print('building embedding_matrix:', embedding_matrix_file_name)
         for word, i in word2idx.items():
             vec = word_vec.get(word)
@@ -133,29 +135,33 @@ class ABSADatesetReader:
             all_data.append(data)
         return all_data
 
-    def __init__(self, dataset='twitter', embed_dim=300):
+    def __init__(self, dataset='law', embed_dim=300):
         print("preparing {0} dataset ...".format(dataset))
         fname = {
-            'twitter': {
-                'train': './datasets/acl-14-short-data/train.raw',
-                'test': './datasets/acl-14-short-data/test.raw'
+            'law': {
+                'train': './datasets/law/law_train.raw',
+                'test': './datasets/law/law_test.raw'
             },
-            'rest14': {
-                'train': './datasets/semeval14/restaurant_train.raw',
-                'test': './datasets/semeval14/restaurant_test.raw'
-            },
-            'lap14': {
-                'train': './datasets/semeval14/laptop_train.raw',
-                'test': './datasets/semeval14/laptop_test.raw'
-            },
-            'rest15': {
-                'train': './datasets/semeval15/restaurant_train.raw',
-                'test': './datasets/semeval15/restaurant_test.raw'
-            },
-            'rest16': {
-                'train': './datasets/semeval16/restaurant_train.raw',
-                'test': './datasets/semeval16/restaurant_test.raw'
-            },
+            # 'twitter': {
+            #     'train': './datasets/acl-14-short-data/train.raw',
+            #     'test': './datasets/acl-14-short-data/test.raw'
+            # },
+            # 'rest14': {
+            #     'train': './datasets/semeval14/restaurant_train.raw',
+            #     'test': './datasets/semeval14/restaurant_test.raw'
+            # },
+            # 'lap14': {
+            #     'train': './datasets/semeval14/law_train.raw',
+            #     'test': './datasets/semeval14/law_test.raw'
+            # },
+            # 'rest15': {
+            #     'train': './datasets/semeval15/restaurant_train.raw',
+            #     'test': './datasets/semeval15/restaurant_test.raw'
+            # },
+            # 'rest16': {
+            #     'train': './datasets/semeval16/restaurant_train.raw',
+            #     'test': './datasets/semeval16/restaurant_test.raw'
+            # },
 
         }
         text = ABSADatesetReader.__read_text__([fname[dataset]['train'], fname[dataset]['test']])
@@ -172,4 +178,3 @@ class ABSADatesetReader:
         self.embedding_matrix = build_embedding_matrix(tokenizer.word2idx, embed_dim, dataset)
         self.train_data = ABSADataset(ABSADatesetReader.__read_data__(fname[dataset]['train'], tokenizer))
         self.test_data = ABSADataset(ABSADatesetReader.__read_data__(fname[dataset]['test'], tokenizer))
-    
